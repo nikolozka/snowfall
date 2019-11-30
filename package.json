@@ -1,0 +1,28 @@
+{
+  "name": "snowfall",
+  "version": "1.0.0",
+  "description": "particles raining from the sky",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "nikolozka",
+  "license": "ISC",
+  "dependencies": {
+    "dat.gui": "^0.7.6",
+    "electron": "^7.1.2",
+    "electron-screenshot": "^1.0.5",
+    "p5": "^0.10.2",
+    "three": "^0.111.0",
+    "three-orbitcontrols": "^2.110.1",
+    "three-subdivision-modifier": "^1.0.5"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "particles",
+    "raining",
+    "from",
+    "the",
+    "sky"
+  ]
+}
