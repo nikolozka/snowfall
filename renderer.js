@@ -26,7 +26,7 @@ const OrbitControls = require('three-orbitcontrols')
 const SubdivisionModifier = require('three-subdivision-modifier')
 
 
-var scene, camera, renderer, controls, axis, gui, geometry, material, mesh, smoothMesh, light;
+var scene, camera, renderer, controls, axis, gui, geometry, material, mesh, smoothMesh, light, geometry;
 
 var normals = [] 
 var vertices = []  
@@ -51,7 +51,7 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 
-var screenShotPath = 'C:/Workspace/PARTICLE_STUFF/Earth/earth_geo_'
+var screenShotPath = '../earth/geo_'
 
 var gmap
 var bounds
@@ -102,9 +102,37 @@ let onLoad = function() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera( 65, mwidth / mheight_top, 0.1, 1000 );
 
-  light = new THREE.PointLight( 0xffffff, 2, 300, 1);
-  light.position.set( 0, 50, 0 );
+  var ambient = new THREE.AmbientLight( 0xffffff, 0.4 );
+  scene.add( ambient );
+
+//  light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+//  scene.add( light );
+
+//  var helper = new THREE.HemisphereLightHelper( light, 5 );
+//  scene.add( helper );
+
+  //light = new THREE.PointLight( 0xffffff, 4, 300, 1);
+  //light.position.set( 0, 50, 0 );
+  //scene.add( light );
+  light = new THREE.SpotLight( 0xffffff );
+  light.position.set( 0, 10, 0 );
+  light.angle = Math.PI/4
+  light.penumbra = 0.1
+  light.decay = 2
+  light.distance = 200
+  light.castShadow = true;
+
+  light.shadow.mapSize.width = 1024;
+  light.shadow.mapSize.height = 1024;
+
+  light.shadow.camera.near = 500;
+  light.shadow.camera.far = 4000;
+  light.shadow.camera.fov = 30;
+
+  //light.target  = mesh
+
   scene.add( light );
+
 
   renderer = new THREE.WebGLRenderer({antialias: true});
   renderer.setSize( mwidth, mheight_top);	
@@ -112,8 +140,8 @@ let onLoad = function() {
   document.getElementById('cnvs').appendChild( renderer.domElement );
 
 
-  camera.position.z = 0;
-  camera.position.y = 30
+  camera.position.z = 115;
+  camera.position.y = 50
 
   camera.lookAt(0,0,0)
 
@@ -125,14 +153,13 @@ let onLoad = function() {
 };
 
 function animate(now) {
-	requestAnimationFrame( animate );
-	camera.position.z=Math.sin(now*0.001)*150+200
+	setTimeout( function(){ requestAnimationFrame( animate );}, 1000/30);
+
+//	camera.position.z=Math.sin(now*0.001)*150+200
 	//camera.position.x=Math.sin(now*0.0009)*150
 
-	camera.lookAt(0,0,0)
-
-	light.position.z = Math.sin(now*0.001)*200
-	light.position.x = Math.cos(now*0.001)*200
+//	camera.lookAt(0,0,0)
+	light.position.set( Math.sin(now*0.001)*15, 10, Math.cos(now*0.001)*15);
 
 
 	//camera.position.y=Math.sin(now*0.001)*50
@@ -160,7 +187,7 @@ function initPlane(){
 
 	//texture.image.src = img.src
 
-	texture.anisotropy = maxAnisotropy;
+	texture.anisotropy = 0;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;	
 	//texture.minFilter = THREE.LinearFilter;
@@ -171,7 +198,7 @@ function initPlane(){
 	//texture.flipX= true
 
 
-	var geometry = new THREE.PlaneBufferGeometry( 100, 100, segments, segments );
+	geometry = new THREE.PlaneBufferGeometry( 100, 100, segments, segments );
 	//geometry.translate(0,-200,-avg/100)
 	geometry.rotateX( -Math.PI / 2 );
 	geometry.translate(0,0,0)
@@ -190,8 +217,10 @@ function initPlane(){
 // 
 	}
 
+
 	material = new THREE.MeshLambertMaterial( { side: THREE.DoubleSide, map: texture, flatShading: false} )
     mesh = new THREE.Mesh( geometry, material );
+    mesh.geometry.computeVertexNormals();
 
     console.log(mesh)
 
