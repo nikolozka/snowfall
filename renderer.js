@@ -23,6 +23,7 @@ const shell = electron.shell;
 const THREE = require('three')
 const dat = require('dat.gui')
 const OrbitControls = require('three-orbitcontrols')
+
 const SubdivisionModifier = require('three-subdivision-modifier')
 
 
@@ -53,6 +54,9 @@ const path = require('path')
 
 var screenShotPath = '../earth/geo_'
 
+var faceIndices = [ 'a', 'b', 'c' ];
+
+
 var gmap
 var bounds
 var elevator 
@@ -69,7 +73,6 @@ const dbg = true;
 
 var hmin = 0
 var hmax = 0
-
 
 function fillHeightMap(){
 	for(var i=0; i<bnd2; i++){
@@ -101,9 +104,9 @@ let onLoad = function() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera( 65, mwidth / mheight_top, 0.1, 1000 );
-
-  var ambient = new THREE.AmbientLight( 0xffffff, 0.4 );
-  scene.add( ambient );
+  scene.fog = new THREE.Fog(0x000000,150,400)
+  //var ambient = new THREE.AmbientLight( 0xffffff, 0.4 );
+  //scene.add( ambient );
 
 //  light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
 //  scene.add( light );
@@ -115,11 +118,11 @@ let onLoad = function() {
   //light.position.set( 0, 50, 0 );
   //scene.add( light );
   light = new THREE.SpotLight( 0xffffff );
-  light.position.set( 0, 10, 0 );
-  light.angle = Math.PI/4
+  light.position.set( 0, 100, 0 );
+  light.angle = Math.PI/2
   light.penumbra = 0.1
-  light.decay = 2
-  light.distance = 200
+  light.decay = 1
+  light.distance = 500
   light.castShadow = true;
 
   light.shadow.mapSize.width = 1024;
@@ -129,9 +132,22 @@ let onLoad = function() {
   light.shadow.camera.far = 4000;
   light.shadow.camera.fov = 30;
 
-  //light.target  = mesh
+
+  //var tmpg = new THREE.SphereGeometry( 5, 32, 32 );
+  //var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+  //var sphere = new THREE.Mesh( geometry, material );
+  //scene.add( sphere );
 
   scene.add( light );
+  scene.add( light.target );
+  //light.target  = tmpg
+
+
+
+
+  console.log(light.target)
+
+  //light.target = mesh
 
 
   renderer = new THREE.WebGLRenderer({antialias: true});
@@ -140,8 +156,8 @@ let onLoad = function() {
   document.getElementById('cnvs').appendChild( renderer.domElement );
 
 
-  camera.position.z = 115;
-  camera.position.y = 50
+  camera.position.z = 150;
+  camera.position.y = 150
 
   camera.lookAt(0,0,0)
 
@@ -159,7 +175,9 @@ function animate(now) {
 	//camera.position.x=Math.sin(now*0.0009)*150
 
 //	camera.lookAt(0,0,0)
-	light.position.set( Math.sin(now*0.001)*15, 10, Math.cos(now*0.001)*15);
+	light.position.set( Math.sin(now*0.001)*100, Math.abs(Math.cos(now*0.001))*60, -20);
+	
+	light.target.position.set(0,0,0)
 
 
 	//camera.position.y=Math.sin(now*0.001)*50
@@ -170,6 +188,8 @@ function animate(now) {
 	//mesh.translateY(-0.07)
 
 	renderer.render( scene, camera );
+	//texture.rotation +=0.01
+
 }
 
 function initPlane(){
@@ -181,48 +201,50 @@ function initPlane(){
 	var maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 
 	//var texture = textureLoader.load( "C:/Workspace/PARTICLE_STUFF/Earth/earth_geo_1574643690754.png" );
-	var texture = textureLoader.load(screenShotPath + '.png')
-
-	//console.log(texture.image)
-
-	//texture.image.src = img.src
+	texture = textureLoader.load(screenShotPath + '.png')
+	//texture = textureLoader.load("../earth/nmbrs.png")
 
 	texture.anisotropy = 0;
 	texture.wrapS = THREE.ClampToEdgeWrapping;
 	texture.wrapT = THREE.ClampToEdgeWrapping;	
-	//texture.minFilter = THREE.LinearFilter;
-	//texture.minFilter = texturePainting.magFilter = THREE.LinearFilter;
-	//texture.mapping = THREE.UVMapping;
 
-	//texture.flipY = true
-	//texture.flipX= true
+	texture.flipY = false
+	//texture.rotation = Math.PI
 
+	bufferGeometry = new THREE.PlaneBufferGeometry( 100, 100, segments, segments );
+	bufferGeometry.rotateX( -Math.PI / 2 );
+	bufferGeometry.translate(0,0,0)
 
-	geometry = new THREE.PlaneBufferGeometry( 100, 100, segments, segments );
-	//geometry.translate(0,-200,-avg/100)
-	geometry.rotateX( -Math.PI / 2 );
-	geometry.translate(0,0,0)
-
-	var vertices = geometry.attributes.position.array;
+	var vertices = bufferGeometry.attributes.position.array;
 	for ( var i = 0, j = 0, l = vertices.length; i < l; i ++, j += 3 ) {
 
-		//vertices[ j + 1 ] = heightmap[ Math.round( (i/3) / 32 )%32 ][i%32] / 100-50; 
-		vertices[ j + 1 ] = (heightmap[ Math.round( (i/3) / 32 )%32 ][i%32] - hmin)*(10)/(hmax-hmin)-50; 
-
-		//vertices[ j + 1 ] = 0
-
-		//console.log(Math.round( (i/3) / 32 )%32)
-		//console.log(i%32)
-		//console.log( heightmap[ Math.round( (i/3) / 32 )%32 ][i%32])
-// 
+		//vertices[ j + 1 ] = (heightmap[ Math.round( (i/3) / 32 )%32 ][i%32] - hmin)*(10)/(hmax-hmin)-50; 
+		vertices[ j + 1 ] = (heightmap[ Math.round( (i/3) / 32 )%32 ][i%32]/150 -(hmin+hmax)/300 -50); 
+	
 	}
 
+	geometry = new THREE.Geometry().fromBufferGeometry( bufferGeometry );
+	//geometry.mergeVertices();
+//	var material = new THREE.MeshBasicMaterial( { color: 0xcccccc, wireframe: true } );
+//	var mesh = new THREE.Mesh( bufferGeometry, material );
+//	scene.add( mesh );
 
+	
+    //mesh.geometry.computeVertexNormals();
+
+    //console.log(mesh)
+
+
+	//console.log(geometry)
 	material = new THREE.MeshLambertMaterial( { side: THREE.DoubleSide, map: texture, flatShading: false} )
-    mesh = new THREE.Mesh( geometry, material );
-    mesh.geometry.computeVertexNormals();
+	//console.log(geometry)
 
-    console.log(mesh)
+	subdivide( geometry, 2 );
+
+	geometry.computeVertexNormals();
+	geometry.computeFaceNormals();
+
+    //mesh = new THREE.Mesh( geometry, material );
 
 	/*var tempGeo = new THREE.Geometry().fromBufferGeometry(mesh.geometry);
 
@@ -232,8 +254,7 @@ function initPlane(){
 	//var modifier = new SubdivisionModifier( 1 );
 	//modifier.modify(tempGeo)
 
-	tempGeo.computeVertexNormals();
-	tempGeo.computeFaceNormals();
+	
 
 	mesh.geometry = new THREE.BufferGeometry().fromGeometry(tempGeo);
 
@@ -256,7 +277,6 @@ function initPlane(){
 	//mesh.geometry.computeVertexNormals(true);
 
 
-	scene.add( mesh );
 
 
 	/*geometry = new THREE.BufferGeometry();
@@ -357,7 +377,7 @@ function elevate(){
 					path[i]={lat: no-(i-1)*((no-so)/2)/bnd2-(no-so)*ofst_y/4.0, lng: we}
 				}
 			}
-			/*  new google.maps.Polyline({
+			  /*new google.maps.Polyline({
     			path: path,
     			strokeColor: '#0000CC',
     			strokeOpacity: 0.4,
@@ -408,7 +428,7 @@ function elevate(){
 
   		segmentset++
   		if(segmentset == 4){
-  			console.log(heightmap)
+  			//console.log(heightmap)
   			for (var i = 1; i<32; i+=2)	{
   				heightmap[i].reverse()
 				//console.log(heightmap[i])
@@ -497,6 +517,53 @@ function elevate(){
   	var re = new RegExp('^-?\\d+(?:\.\\d{0,' + (fixed || -1) + '})?');
   	return num.toString().match(re)[0];
   }
+
+
+function subdivide( geometry, subdivisions ) {
+	var modifier = new SubdivisionModifier( subdivisions, true );
+	modifier.modify( geometry );
+
+
+
+	geometry.computeBoundingBox();
+
+	var max = geometry.boundingBox.max,
+	    min = geometry.boundingBox.min;
+
+	var offset = new THREE.Vector2(0 - min.x, 0 - min.z);
+	var range = new THREE.Vector2(max.x - min.x, max.z - min.z);
+	var faces = geometry.faces;
+	//console.log(faces)
+	//console.log(geometry)
+
+
+	geometry.faceVertexUvs[0] = [];
+
+	
+	for (var i = 0; i < faces.length ; i++) {
+
+	    var v1 = geometry.vertices[faces[i].a], 
+	        v2 = geometry.vertices[faces[i].b], 
+	        v3 = geometry.vertices[faces[i].c];
+
+	    geometry.faceVertexUvs[0].push([
+	        new THREE.Vector2((v1.x + offset.x)/range.x ,(v1.z + offset.y)/range.y),
+	        new THREE.Vector2((v2.x + offset.x)/range.x ,(v2.z + offset.y)/range.y),
+	        new THREE.Vector2((v3.x + offset.x)/range.x ,(v3.z + offset.y)/range.y)
+	    ]);
+	}
+	geometry.uvsNeedUpdate = true;
+
+
+	mesh = new THREE.Mesh( geometry, material );
+	console.log(mesh)
+
+	scene.add( mesh );
+
+	//wireframe.geometry = smoothMesh.geometry;
+				//
+//	updateUI( geometry, smoothGeometry );
+}
 
   window.addEventListener('load', onLoad);
 
