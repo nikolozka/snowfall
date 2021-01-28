@@ -17,7 +17,7 @@
     "three-subdivision-modifier": "^1.0.5"
   },
   "devDependencies": {
-    "electron": "^6.0.11",
+    "electron": "^9.4.0",
     "electron-rebuild": "^1.8.6"
   },
   "keywords": [
